@@ -1,0 +1,87 @@
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+from nltk.tokenize import word_tokenize
+import pandas as pd
+import numpy as np
+with open(r"C:/Users/Joshi/Desktop/cdoc2.txt" ) as f:
+    data = f.readlines()
+data = [x.strip().strip('\n').strip("'") for x in data] 
+#documents
+
+
+# deleting empty cells
+df_l3= list(filter (None, data))
+
+#covert the data into tagged data
+tagged_data = [TaggedDocument(words=word_tokenize(_d.lower()), tags=[str(i)]) for i, _d in enumerate(df_l3)]
+
+# training the data:
+max_epochs = 10000
+vec_size = 300 #
+alpha = 0.025 # initial running rate
+
+pretrained_emb = "C:/Users/Joshi/Desktop/GoogleNews/GoogleNews-vectors-negative300.txt"
+
+#model = Doc2Vec.load_word2vec_format(wordvec_path, binary=False)
+
+model = Doc2Vec(size=vec_size,
+                alpha=alpha, 
+                min_alpha=0.00025,
+                min_count=2,
+                pretrained_emb=pretrained_emb,
+                dbow_words=1,
+                dm_concat=1,
+                negative=5,
+                sample=1e-3,
+                dm =0)
+  
+model.build_vocab(tagged_data)
+#a=model.build_vocab(tagged_data)
+
+
+for epoch in range(max_epochs):
+    print('iteration {0}'.format(epoch))
+    model.train(tagged_data,
+                total_examples=model.corpus_count,
+                epochs=model.iter)
+    # decrease the learning rate
+    model.alpha -= 0.0002
+    # fix the learning rate, no decay
+    model.min_alpha = model.alpha
+
+model.save("d2v.model")
+#print("Model Saved")
+
+# testing the model:
+from gensim.models.doc2vec import Doc2Vec
+
+model= Doc2Vec.load("d2v.model")
+#to find the vector of a document which is not in training data
+enter_word= input("Enter a input  ")
+test_data = word_tokenize(enter_word.lower())
+v1 = model.infer_vector(test_data,steps=10000,alpha=0.025, min_alpha=0.0001
+
+# to find most similar doc using tags
+sim=len(tagged_data)
+sim=int(sim)
+similar_doc = model.docvecs.most_similar([v1],topn=sim)
+
+len(similar_doc)
+
+# extracting the positive similarity:
+
+a=[]
+for i in range(len(similar_doc)):
+  if similar_doc[i][1]>-0.1:
+    a=np.append(a,similar_doc[i][0])
+    
+dc1=[]
+for i in range(len(a)):    
+  dc1=np.append(dc1,int(a[i]))
+
+vc1=dc1.astype(np.int64)
+vccc1=np.sort(vc1)
+len(vccc1)
+
+# printing similar documents
+for doc_id in vccc1:  
+  print(' '.join(tagged_data[doc_id].words))
